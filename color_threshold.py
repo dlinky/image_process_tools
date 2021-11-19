@@ -14,7 +14,7 @@ def empty(self):
 
 
 windowName = 'Threshold'
-cv2.namedWindow(windowName)
+cv2.namedWindow(windowName, flags=cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_EXPANDED)
 cv2.createTrackbar('Manual', windowName, 0, 1, empty)
 cv2.createTrackbar('L_inv', windowName, 0, 1, empty)
 cv2.createTrackbar('L_th', windowName, 0, 255, empty)
