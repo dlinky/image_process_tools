@@ -18,7 +18,7 @@ for file in file_list:
     sizes = [(box[3] - box[1]) * (box[4] - box[2]) for box in table]
     big_sizes.extend(sizes)
     # hist, bins = np.histogram(sizes)
-    hist = plt.hist(sizes, bins=20)
+    hist = plt.hist(sizes, bins=20, range=(0, 10000))
     plt.savefig(os.path.join(hist_dir, file.replace('.xml', '.png')))
     plt.close()
 
