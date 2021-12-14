@@ -9,77 +9,35 @@ file = [_ for _ in os.listdir() if _.endswith('.jpg')]
 img = cv2.imread(file[0])
 
 
-def empty(self):
-    pass
-
-
-windowName = 'Threshold'
-cv2.namedWindow(windowName, flags=cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_EXPANDED)
-cv2.createTrackbar('Manual', windowName, 0, 1, empty)
-cv2.createTrackbar('L_inv', windowName, 0, 1, empty)
-cv2.createTrackbar('L_th', windowName, 0, 255, empty)
-cv2.createTrackbar('a_inv', windowName, 0, 1, empty)
-cv2.createTrackbar('a_th', windowName, 0, 255, empty)
-cv2.createTrackbar('b_inv', windowName, 0, 1, empty)
-cv2.createTrackbar('b_th', windowName, 0, 255, empty)
-
 lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+b, g, r = cv2.split(img)
 l, a, b = cv2.split(lab)
+h, s, v = cv2.split(hsv)
+tozero = cv2.THRESH_TOZERO
+inv = cv2.THRESH_TOZERO_INV
+otsu = cv2. THRESH_OTSU
 
-while True:
-    if cv2.waitKey(10) == 27:
-        cv2.destroyAllWindows()
-        break
+labels = ['R', 'G', 'B', 'L', 'a', 'b', 'H', 'S', 'V']
+cvt_imgs = [r, g, b,
+             l, a, b,
+             h, s, v]
+th_methods = [inv, inv, inv,
+             inv, tozero, inv,
+             tozero, tozero, inv]
+th_imgs = []
 
-    temp = copy.deepcopy(img)
-    manual_switch = cv2.getTrackbarPos('Manual', windowName)
-    L_inv = cv2.getTrackbarPos('L_inv', windowName)
-    L_th = cv2.getTrackbarPos('L_th', windowName)
-    a_inv = cv2.getTrackbarPos('a_inv', windowName)
-    a_th = cv2.getTrackbarPos('a_th', windowName)
-    b_inv = cv2.getTrackbarPos('b_inv', windowName)
-    b_th = cv2.getTrackbarPos('b_th', windowName)
+for th_method, cvt_img, label in zip(th_methods, cvt_imgs, labels):
+    _, th_img = cv2.threshold(cvt_img, 0, 255, th_method + otsu)
+    th_img = cv2.cvtColor(th_img, cv2.COLOR_GRAY2BGR)
+    th_imgs.append(th_img)
+    cv2.putText(th_img, label, (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 0), 20, cv2.LINE_AA)
+    cv2.putText(th_img, label, (30, 80), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 5, cv2.LINE_AA)
 
-    if manual_switch == 1:
-        if L_inv == 1:
-            _, threshed_L = cv2.threshold(l, L_th, 255, cv2.THRESH_BINARY_INV)
-        else:
-            _, threshed_L = cv2.threshold(l, L_th, 255, cv2.THRESH_BINARY)
+stack1 = np.hstack((th_imgs[0], th_imgs[1], th_imgs[2]))
+stack2 = np.hstack((th_imgs[3], th_imgs[4], th_imgs[5]))
+stack3 = np.hstack((th_imgs[6], th_imgs[7], th_imgs[8]))
+stacked = np.vstack((stack1, stack2, stack3))
 
-        if a_inv == 1:
-            _, threshed_a = cv2.threshold(a, a_th, 255, cv2.THRESH_BINARY_INV)
-        else:
-            _, threshed_a = cv2.threshold(a, a_th, 255, cv2.THRESH_BINARY)
-
-        if b_inv == 1:
-            _, threshed_b = cv2.threshold(b, b_th, 255, cv2.THRESH_BINARY_INV)
-        else:
-            _, threshed_b = cv2.threshold(b, b_th, 255, cv2.THRESH_BINARY)
-    else:
-        if L_inv == 1:
-            _, threshed_L = cv2.threshold(l, L_th, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        else:
-            _, threshed_L = cv2.threshold(l, L_th, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-        if a_inv == 1:
-            _, threshed_a = cv2.threshold(a, a_th, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        else:
-            _, threshed_a = cv2.threshold(a, a_th, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-        if b_inv == 1:
-            _, threshed_b = cv2.threshold(b, b_th, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        else:
-            _, threshed_b = cv2.threshold(b, b_th, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-    masked_L = cv2.bitwise_and(temp, temp, mask=threshed_L)
-    masked_a = cv2.bitwise_and(temp, temp, mask=threshed_a)
-    masked_b = cv2.bitwise_and(temp, temp, mask=threshed_b)
-    masked_all = cv2.bitwise_and(masked_L, masked_a, mask=threshed_b)
-    cv2.putText(masked_b, 'masked_b', (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(masked_L, 'masked_L', (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    cv2.putText(masked_a, 'masked_a', (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    stacked1 = np.vstack((masked_L, masked_a))
-    stacked2 = np.vstack((masked_b, masked_all))
-    stacked = np.hstack((stacked1, stacked2))
-
-    cv2.imshow(windowName, cv2.resize(stacked, (0, 0), fx=0.5, fy=0.5))
+cv2.imshow('win', cv2.resize(stacked, (1000, 1000)))
+cv2.waitKey(0)
